@@ -10,6 +10,6 @@ namespace SharedShoppingList.Models
     {
         public Guid UserID { get; set; }
 
-        public IEnumerable<ShoppingListItem> Items { get; set; }
+        public Dictionary<string, int> Items { get; set; }
     }
 }

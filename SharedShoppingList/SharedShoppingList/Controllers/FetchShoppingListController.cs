@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using SharedShoppingList.Models;
+using SharedShoppingList.Utils;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,7 +18,7 @@ namespace SharedShoppingList.Controllers
     [Route("[controller]")]
     public class FetchShoppingListController : ControllerBase
     {
-        private readonly string _pretendDatabaseFilePath = Path.Combine(Environment.CurrentDirectory, "pretenddatabase.json");
+        private readonly string _pretendDatabaseFilePath = Path.Combine(Environment.CurrentDirectory, "7f6bb6e6-00d6-468a-b768-2333ae4cb6ed.json");
 
         private readonly ILogger<FetchShoppingListController> _logger;
 
@@ -27,30 +28,17 @@ namespace SharedShoppingList.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult> Get(CancellationToken cancellationToken)
+        public async Task<ActionResult> Get(Guid id, CancellationToken cancellationToken)
         {
             if (Debugger.IsAttached)
             {
                 
-                return Ok(await PretendDatabase(cancellationToken));
+                return Ok(await PretendDatabase.Fetch(id, cancellationToken));
             }
             else
             {
                 return Ok("Beep boop!");
             }
-        }
-
-        private async Task<string> PretendDatabase(CancellationToken cancellationToken)
-        {
-            var test = new List<ShoppingListItem> { new ShoppingListItem { Item = "mælk", Quantity = 2 }, new ShoppingListItem { Item = "ymer", Quantity = 1 }, new ShoppingListItem { Item = "lego vespa", Quantity = 1 } };
-            Console.WriteLine(JsonConvert.SerializeObject(test));
-
-            if (System.IO.File.Exists(_pretendDatabaseFilePath))
-            {
-                return await System.IO.File.ReadAllTextAsync(_pretendDatabaseFilePath, Encoding.UTF8, cancellationToken);
-
-            }
-            throw new FileNotFoundException($"Could not find database file: {_pretendDatabaseFilePath}");
         }
     }
 }

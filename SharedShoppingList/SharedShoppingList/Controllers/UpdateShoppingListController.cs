@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using SharedShoppingList.Models;
+using SharedShoppingList.Utils;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -18,7 +19,7 @@ namespace SharedShoppingList.Controllers
     [Route("[controller]")]
     public class UpdateShoppingListController : ControllerBase
     {
-        private readonly string _pretendDatabaseFilePath = Path.Combine(Environment.CurrentDirectory, "pretenddatabase.json");
+        private readonly string _pretendDatabaseFilePath = Path.Combine(Environment.CurrentDirectory, "7f6bb6e6-00d6-468a-b768-2333ae4cb6ed.json");
 
         private readonly ILogger<UpdateShoppingListController> _logger;
 
@@ -28,12 +29,14 @@ namespace SharedShoppingList.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult> UpdateList(ShoppingList shoppingList, CancellationToken cancellationToken)
+        public async Task<ActionResult> UpdateList(Guid id, ShoppingList shoppingList, CancellationToken cancellationToken)
         {
-            await Task.FromResult(0);
             if (Debugger.IsAttached)
             {
-                return Ok(await UpdatePretendDatabase(null, cancellationToken));
+                foreach (var splat in shoppingList.Items) {
+                    await PretendDatabase.Update(id, new ShoppingListItem { Item = splat.Key, Quantity = splat.Value }, cancellationToken);
+                }
+                return Ok(shoppingList);
             }
             else
             {
@@ -42,52 +45,16 @@ namespace SharedShoppingList.Controllers
         }
 
         [HttpPatch]
-        public async Task<ActionResult> UpdateItemInList([Required] Guid userId, [FromQuery] ShoppingListItem shoppingListItem, CancellationToken cancellationToken)
+        public async Task<ActionResult> UpdateItemInList(/*[Required]*/ Guid id, [FromQuery] ShoppingListItem shoppingListItem, CancellationToken cancellationToken)
         {
-            await Task.FromResult(0);
             if (Debugger.IsAttached)
             {
-                return Ok(await UpdatePretendDatabase(shoppingListItem, cancellationToken));
+                return Ok(await PretendDatabase.Update(id, shoppingListItem, cancellationToken));
             }
             else
             {
                 return NotFound("Beep boop!");
             }
-        }
-
-        private async Task<string> UpdatePretendDatabase(ShoppingListItem shoppingListItem, CancellationToken cancellationToken)
-        {
-            if (System.IO.File.Exists(_pretendDatabaseFilePath))
-            {
-                var str = await System.IO.File.ReadAllTextAsync(_pretendDatabaseFilePath, Encoding.UTF8, cancellationToken);
-                var list = JsonConvert.DeserializeObject<IEnumerable<ShoppingListItem>>(str);
-                var map = list.ToDictionary(x => x.Item, x => x.Quantity);
-                if (map.TryGetValue(shoppingListItem.Item, out var _))
-                {
-                    if (shoppingListItem.Quantity == 0)
-                    {
-                        Console.WriteLine($"Removing {shoppingListItem.Item}");
-                        map.Remove(shoppingListItem.Item);
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Updating {shoppingListItem.Item} to {shoppingListItem.Quantity}");
-                        map[shoppingListItem.Item] = shoppingListItem.Quantity;
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"Inserting {shoppingListItem.Item} with quantatiy {shoppingListItem.Quantity}");
-                    map.Add(shoppingListItem.Item, shoppingListItem.Quantity);
-                }
-
-                var result = JsonConvert.SerializeObject(map.Select(x => new ShoppingListItem { Item = x.Key, Quantity = x.Value }));
-                await System.IO.File.WriteAllTextAsync(_pretendDatabaseFilePath, result, cancellationToken);
-                return result;
-
-            }
-            throw new FileNotFoundException($"Could not find database file: {_pretendDatabaseFilePath}");
-
         }
     }
 }
